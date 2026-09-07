@@ -1,0 +1,21 @@
+# ============================================================
+# 生产环境 profile（application-prod.yml）
+#
+# 启用方式：启动参数加 -Dspring.profiles.active=prod
+# 或环境变量 SPRING_PROFILES_ACTIVE=prod
+#
+# 与 application.yml 的差异：
+#   - spring.sql.init.mode = never
+#     ★ 生产环境绝不执行 data.sql（data.sql 每次会 DELETE 全部业务表并重灌种子，
+#       会静默清空后台维护的数据）。表结构 schema.sql 也一并关闭——
+#       结构变更应走 Flyway/手动迁移，而非每次启动盲执行。
+#   - 日志级别收敛为 info（减少生产磁盘写入）
+# ============================================================
+spring:
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    site.we1l: info

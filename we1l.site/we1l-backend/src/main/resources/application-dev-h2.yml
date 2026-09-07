@@ -1,0 +1,36 @@
+# ============================================================
+# 本地冒烟测试 profile：不依赖 MySQL，用文件型 H2（MySQL 兼容模式）
+# 启动方式：--spring.profiles.active=dev-h2
+# 数据文件落在 we1l-backend/data/ 下，删除该目录即可重置
+# ============================================================
+spring:
+  config:
+    activate:
+      on-profile: dev-h2
+
+  datasource:
+    driver-class-name: org.h2.Driver
+    # MODE=SQLite：让 H2 复用 SQLite 方言的单份 schema.sql，数据文件落在 data/ 下
+    url: jdbc:h2:file:./data/we1l-h2smoke;MODE=SQLite;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    username: sa
+    password: ""
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+      continue-on-error: false
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    site.we1l: debug

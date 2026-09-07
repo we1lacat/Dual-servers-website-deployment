@@ -1,0 +1,83 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: we1l-backend
+
+  # ===== 默认数据源：SQLite =====
+  # 单文件数据库，零外部依赖，适合个人站/单机/低并发。
+  # 数据文件位置可用环境变量覆盖：DB_PATH；建议放到独立数据目录以便备份。
+  # SQLite 是「单写者」模型，Hikari 写连接必须 ≤1，否则 SQLITE_BUSY；这里给出安全默认。
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:${DB_PATH:/opt/we1l/data/we1l.db}
+    # Hikari SQLite 调优：写锁+WAL 模式下，连接数=1 即可；读连接数可达 4-8。
+    # 注意：SQLite 单进程下 HikariPool 的"maximum-pool-size"对总并发生效；
+    #       写并发最高 1；如确需写并发 >1，需结合业务层排队或切换 MySQL。
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 4
+      minimum-idle: 1
+      pool-name: We1lHikari
+      # SQLite 通常不需要 prepareStatement cache
+      prepStmtCacheSize: 0
+      prepStmtCacheSqlLimit: 0
+      connection-init-sql: "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000;"
+
+  # 自动建表+灌种子数据（仅适合首次部署/本地开发）
+  # ⚠️ data.sql 每次执行会 DELETE 全部业务表并重灌种子 ——
+  #    生产环境必须启用 prod profile（application-prod.yml, mode: never）防止重启清空后台数据！
+  #    表结构演进请走 Flyway/手动迁移，勿依赖每次启动盲执行。
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+      continue-on-error: false
+
+  jackson:
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: site.we1l.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+      # SQLite 不允许下划线自动加引号，保持默认（不强转）
+
+# 允许跨域的前端来源（逗号分隔，也可用环境变量 CORS_ORIGINS 覆盖）
+we1l:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  auth:
+    jwt:
+      secret: ${JWT_SECRET:we1l-site-default-secret-please-replace-in-production-32bytes-min}
+      expire-hours: ${JWT_EXPIRE_HOURS:8}
+    admin:
+      # 首次启动写入的默认管理员；密码使用环境变量注入更安全
+      username: ${ADMIN_USERNAME:admin}
+      password: ${ADMIN_PASSWORD:admin123456}
+      display-name: ${ADMIN_DISPLAY_NAME:we1l 站长}
+
+  # ===== 运维状态探测（前端右上角状态指示器） =====
+  # monitor-url: A 机 Prometheus（经 WireGuard 隧道访问，仅后端可达）
+  # backup-dir : B 机本地备份目录（backup.sh VACUUM INTO 落盘处）
+  ops:
+    monitor-url: ${OPS_MONITOR_URL:http://10.10.0.2:9090}
+    backup-dir: ${OPS_BACKUP_DIR:/opt/we1l/backup}
+    backup-max-age-hours: ${OPS_BACKUP_MAX_AGE_HOURS:24}
+
+logging:
+  level:
+    site.we1l: debug

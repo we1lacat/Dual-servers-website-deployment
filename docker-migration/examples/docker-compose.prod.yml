@@ -1,0 +1,65 @@
+# ============================================================
+# 生产编排模板 —— 服务器只 pull 不 build
+#
+# 用法（配置文件与 .env 同目录）：
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d
+#
+# 设计要点：
+#   1) backend / nginx 均用 .env 里的私有仓库镜像（服务器不跑构建）
+#   2) 密钥全部走 .env 注入，绝不硬编码进本文件
+#   3) backend 只在编排网络内 expose，不发布宿主端口（唯一入口是 nginx）
+#   4) 证书由宿主 certbot 管理，容器只读挂载
+# ============================================================
+
+services:
+  backend:
+    image: "${BACKEND_IMAGE}"
+    restart: unless-stopped
+    # 对齐宿主数据目录属主（来自 01-preflight 的实测 uid），防库文件 640 写失败
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      DB_PATH: /data/app.db              # 容器内路径；宿主路径由卷决定
+      # ---- 密钥区（值在 .env，勿写死在这里）----
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      OPS_MONITOR_URL: ${OPS_MONITOR_URL}
+      # ⚠️ jar 直跑只认 JAVA_TOOL_OPTIONS（JAVA_OPTS 是 Tomcat 约定，不生效）
+      JAVA_TOOL_OPTIONS: >-
+        -XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=25
+        -XX:+UseZGC -XX:MaxGCPauseMillis=20
+        -XX:+ExitOnOutOfMemoryError -XX:HeapDumpPath=/oom
+    volumes:
+      - ${HOST_DATA_DIR}:/data           # SQLite 主库：WAL 需挂整个目录
+      - ${HOST_BACKUP_DIR}:/backup       # 备份输出（与宿主 cron 共享目录）
+      - ${HOST_OOM_DIR}:/oom             # OOM heap dump
+    expose:
+      - "8080"
+    mem_limit: ${MEM_LIMIT:-512m}        # 小内存机宁低勿高，宿主配 swap 兜底
+    networks:
+      - app-net
+    # ---- host 模式变体（仅当桥接下探不到隧道对端时启用）----
+    # 启用后：删掉上方 networks/expose，nginx 反代改 proxy_pass http://127.0.0.1:8080
+    # network_mode: host
+
+  nginx:
+    image: "${FRONTEND_IMAGE}"
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro   # 单一真相源
+      - ${HOST_CERT_DIR}:/etc/letsencrypt:ro          # 证书（宿主 certbot 续期）
+      - ${HOST_CERTBOT_DIR}:/var/www/certbot:ro       # ACME webroot（宿主 certbot 写入）
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge

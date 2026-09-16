@@ -1,0 +1,21 @@
+# 密钥与环境变量（仓库里只保留 *.example）
+.env
+.env.prod
+.env.local
+
+# 运行时有状态数据
+data/
+backup/
+oom/
+certbot/
+
+# 前端构建产物
+dist/
+frontend-dist/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

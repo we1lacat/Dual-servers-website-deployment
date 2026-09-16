@@ -1,0 +1,35 @@
+# ============================================================
+# 后端多阶段构建模板（Spring Boot，jar 不落地）
+# 构建上下文 = 后端工程根目录：
+#   docker build -t myapp-backend:local -f Dockerfile .
+# ============================================================
+
+# ---- 构建阶段：完整 JDK + Maven ----
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+# 先拷 pom 再拷源码：依赖不变时改源码不重新拉依赖（层缓存）
+COPY pom.xml .
+COPY src ./src
+RUN mvn -B -ntp clean package -DskipTests
+
+# ---- 运行阶段：仅 JRE，体积小 ----
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+
+# 数据 / 备份目录真实路径由宿主机卷挂载覆盖，这里只预建挂载点
+RUN mkdir -p /data /backup /oom
+
+# ⚠️ 按你的实际产物名修改
+COPY --from=build /build/target/app-backend.jar app.jar
+
+EXPOSE 8080
+
+# MaxRAMPercentage：让 JVM 感知容器内存上限，避免 OOM Kill
+# （不要用 -Xmx 固定值；JAVA_OPTS 在 jar 直跑时也不生效，见 docs/05 #11）
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar", "--spring.profiles.active=prod"]
+
+# ---- 非 root 硬化（可选）----
+# 取消注释后，需与宿主数据目录属主、compose 的 user: 三方对齐，
+# 否则 SQLite 等本地文件 640 权限会写失败：
+# RUN groupadd -r app && useradd -r -g app app && chown -R app:app /data /backup /oom /app
+# USER app

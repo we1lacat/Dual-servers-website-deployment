@@ -1,0 +1,71 @@
+# ============================================================
+# we1l.site 生产编排（B 机专用） —— 由 docker-compose.yml 派生
+#
+# 与本地版的区别：
+#   1) backend / nginx 均改用 ACR 镜像（image:），B 机只 pull 不 build
+#      （2C2G 不宜本地 maven/node 多阶段构建）
+#   2) 镜像地址走 .env.prod 的 ${BACKEND_IMAGE} / ${FRONTEND_IMAGE}
+#   3) backend mem_limit 降到 512m（B 机内存紧张，swap 已存在但仍留余量）
+#   4) 宿主路径改 /opt/we1l/...，APP_UID/GID=987（对齐宿主 tomcat 属主）
+#
+# 运行（在 B 机 /opt/we1l 目录，Docker 装好后）：
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# ⚠️ WireGuard / Prometheus 探活说明：
+#   默认 backend 保持在 we1l-net 桥接网络，nginx 经 Docker DNS 解析
+#   `backend:8080` 正常反代。backend 探 A 机 Prometheus(10.10.0.2:9090)
+#   走宿主 IP 转发（B 机本身已可达 10.10.0.2:9090，桥接容器默认也能经
+#   宿主路由过去）。若上线后探针不通，启用下方「host 模式变体」。
+# ============================================================
+
+services:
+  backend:
+    image: "${BACKEND_IMAGE}"          # ACR：registry.cn-<地域>.aliyuncs.com/<ns>/we1l-backend:latest
+    restart: unless-stopped
+    user: "${APP_UID:-987}:${APP_GID:-987}"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_PATH: /data/we1l.db
+      OPS_BACKUP_DIR: /backup
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      OPS_MONITOR_URL: ${OPS_MONITOR_URL}
+      JAVA_TOOL_OPTIONS: >-
+        -XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=25
+        -XX:+UseZGC -XX:+ZGenerational -XX:MaxGCPauseMillis=20
+        -XX:+ExitOnOutOfMemoryError -XX:HeapDumpPath=/oom
+    volumes:
+      - ${HOST_DATA_DIR}:/data
+      - ${HOST_BACKUP_DIR}:/backup
+      - ${HOST_OOM_DIR}:/oom
+    expose:
+      - "8080"
+    mem_limit: 512m
+    networks:
+      - we1l-net
+    # ---- host 模式变体（仅当桥接探不到 A 机 Prometheus 时启用）----
+    # 启用后：删掉上面 networks/expose，改下方两行，且 nginx 反代改
+    #         proxy_pass http://127.0.0.1:8080（见 nginx/default.conf 注释）
+    # network_mode: host
+
+  nginx:
+    image: "${FRONTEND_IMAGE}"         # ACR：registry.cn-<地域>.aliyuncs.com/<ns>/we1l-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${HOST_CERT_DIR}:/etc/letsencrypt:ro
+      - ${HOST_CERTBOT_DIR}:/var/www/certbot:ro
+    networks:
+      - we1l-net
+
+networks:
+  we1l-net:
+    driver: bridge

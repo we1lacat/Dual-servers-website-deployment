@@ -1,0 +1,45 @@
+# ===== Java / Maven =====
+target/
+*.class
+*.war
+*.jar
+!we1l.site/we1l-backend/target/.gitkeep
+
+# ===== Node / Vite =====
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# ===== 依赖锁（按团队习惯保留可删此行） =====
+# package-lock.json
+
+# ===== 凭据 / 环境 =====
+.env
+.env.*
+*.env
+*.local
+# 白名单：保留脱敏后的示例模板
+!.env.example
+# 服务器本地密钥文件（绝不入库）
+.jwt_secret
+.admin_pwd
+secrets/
+*.pem
+*.key
+
+# ===== 日志 / 运行时 =====
+*.log
+logs/
+oom/
+
+# ===== OS / IDE =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ===== 临时 / 构建产物 =====
+tmp/
+.cache/

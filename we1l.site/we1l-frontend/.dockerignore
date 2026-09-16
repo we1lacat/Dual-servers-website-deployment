@@ -1,0 +1,16 @@
+# 前端构建上下文排除项（缩小 docker build 上下文 + 让 node_modules/dist 走重建）
+node_modules
+dist
+dist-*
+dist-new
+dist-mobile
+*.log
+npm-debug.log*
+.DS_Store
+.git
+.github
+.vscode
+.idea
+# 自身文件无需进上下文
+Dockerfile
+.dockerignore

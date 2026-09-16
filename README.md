@@ -2,7 +2,7 @@
 
 双服务器网站部署实践仓库。以 [we1l.site](we1l.site/)（Spring Boot 3 + Vue 3 个人站点）为具体案例，沉淀**跨地域双机部署 + 容器化交付**的完整链路：架构设计、运维脚本、部署 SOP、以及可复用于其他项目的「传统部署 → Docker」迁移手册。
 
-> 本仓库所有部署文档、脚本均为**公开脱敏版**：公网 IP、域名、ACR 账号、SSH 账号、密钥文件等均已替换为占位符或外部读取（`$(cat /opt/...)`），可直接开源。
+> 本仓库所有部署文档、脚本均为**公开脱敏版**：公网 IP、域名、ACR 账号、SSH 账号、密钥文件等均已替换为占位符或外部读取（`$(cat /opt/...)`）。
 
 ## 架构概览
 
@@ -21,9 +21,9 @@
               （10.10.0.0/24，A↔B 互通，A 不直连公网）
 ```
 
-- **B 机**为唯一公网入口：Nginx 承担 SSL 终止、反向代理、静态资源分发；后端经 Tomcat 或 Docker 运行；数据落本地 SQLite。
-- **A 机**仅经 WireGuard 与 B 机互通，承担监控采集与每日热备份接收，不直接暴露公网。
-- 凭据（JWT_SECRET / 管理员密码）由 B 机本地文件提供，不进仓库。
+- **B 机**唯一公网入口：Nginx 承担 SSL 终止、反向代理、静态资源分发；后端经 Tomcat 或 Docker 运行；数据落本地 SQLite。
+- **A 机**经 WireGuard 与 B 机互通，承担监控采集与每日热备份接收，不直接暴露公网。
+- 凭据（JWT_SECRET / 管理员密码）由 B 机本地文件提供。
 
 ## 仓库结构
 
@@ -52,8 +52,8 @@ Dual-servers-website-deployment/
 | 你想做的事 | 看这里 |
 |---|---|
 | 了解双机部署完整步骤 | `we1l.site/docs/部署操作文档.md` |
-| 跑通本地前后端 | `we1l.site/README.md` → 快速启动 |
-| 用 Docker 交付 we1l.site | `we1l.site/docker-compose.prod.yml` + `docker-migration/` |
+| 本地前后端 | `we1l.site/README.md` → 快速启动 |
+|  Docker 交付  | `we1l.site/docker-compose.prod.yml` + `docker-migration/` |
 | 把任意传统部署改成 Docker | `docker-migration/README.md` |
 | 部署 / 回滚 / 安装监控 | `we1l.site/scripts/` |
 
@@ -64,6 +64,6 @@ Dual-servers-website-deployment/
 
 ## 安全基线
 
-- JWT_SECRET ≥ 32 字节随机；管理员默认口令 `admin123456` **仅本地冒烟用**，生产须改。
+- JWT_SECRET ≥ 32 字节随机；管理员默认口令 `admin123456`，生产须改。
 - `/admin` 建议叠加 Nginx `auth_basic` 二次校验。
-- 所有密钥均走环境变量 / 本地文件，仓库内零明文。
+-  密钥写入环境变量 / 本地文件。

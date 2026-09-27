@@ -7,6 +7,7 @@
 #   2) 镜像地址走 .env.prod 的 ${BACKEND_IMAGE} / ${FRONTEND_IMAGE}
 #   3) backend mem_limit 降到 512m（B 机内存紧张，swap 已存在但仍留余量）
 #   4) 宿主路径改 /opt/we1l/...，APP_UID/GID=987（对齐宿主 tomcat 属主）
+#   5) 新增 uploads 卷：${HOST_UPLOAD_DIR} → /uploads（后台上传图片持久化）
 #
 # 运行（在 B 机 /opt/we1l 目录，Docker 装好后）：
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
@@ -27,6 +28,8 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       DB_PATH: /data/we1l.db
       OPS_BACKUP_DIR: /backup
+      # 上传图片（笔记缩略图等）落盘目录；由 WebConfig 以 /uploads/** 静态暴露
+      UPLOAD_DIR: /uploads
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS}
       ADMIN_USERNAME: ${ADMIN_USERNAME}
@@ -41,6 +44,7 @@ services:
       - ${HOST_DATA_DIR}:/data
       - ${HOST_BACKUP_DIR}:/backup
       - ${HOST_OOM_DIR}:/oom
+      - ${HOST_UPLOAD_DIR}:/uploads      # 后台上传图片，须持久化，否则重建丢图
     expose:
       - "8080"
     mem_limit: 512m

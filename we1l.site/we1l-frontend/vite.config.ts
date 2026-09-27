@@ -17,6 +17,11 @@ export default defineConfig({
         target: process.env.BACKEND_URL || 'http://localhost:8080',
         changeOrigin: true,
       },
+      // 后台上传的图片（缩略图等）由后端 /uploads/** 静态提供，dev 下同样需要代理
+      '/uploads': {
+        target: process.env.BACKEND_URL || 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
   build: {

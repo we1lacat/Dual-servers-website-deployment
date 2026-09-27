@@ -5,16 +5,19 @@
 # 或环境变量 SPRING_PROFILES_ACTIVE=prod
 #
 # 与 application.yml 的差异：
-#   - spring.sql.init.mode = never
-#     ★ 生产环境绝不执行 data.sql（data.sql 每次会 DELETE 全部业务表并重灌种子，
-#       会静默清空后台维护的数据）。表结构 schema.sql 也一并关闭——
-#       结构变更应走 Flyway/手动迁移，而非每次启动盲执行。
+#   - spring.sql.init.mode = always（schema.sql + data.sql 均执行）
+#     ★ schema.sql 全部为 CREATE TABLE IF NOT EXISTS（幂等），每次启动安全建表，
+#       全新库（如 Docker 全新卷）也能起；重启不会丢数据。
+#     ★ data.sql 已改造为逐行 INSERT ... WHERE NOT EXISTS（幂等种子），首次种入、
+#       重启跳过，绝不清空后台维护的数据（原 DELETE+重灌 的破坏性逻辑已移除）。
+#     ★ 后台管理员账号由 AdminBootstrapRunner 在表空时自动种入，与 data.sql 互不冲突。
 #   - 日志级别收敛为 info（减少生产磁盘写入）
 # ============================================================
 spring:
   sql:
     init:
-      mode: never
+      mode: always
+      data-locations: classpath:db/data.sql
 
 logging:
   level:

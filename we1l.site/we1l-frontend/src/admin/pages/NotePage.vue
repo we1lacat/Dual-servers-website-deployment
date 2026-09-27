@@ -40,6 +40,8 @@ function refresh() {
 const fields = [
   { prop: 'title', label: '标题', required: true },
   { prop: 'category', label: '分类', width: '110' },
+  // 可选缩略图：上传后前台笔记列表展示缩略图；留空则前台沿用默认（纯文字行）样式
+  { prop: 'cover', label: '缩略图', type: 'image' as const, placeholder: '选择图片（可选）', width: '90' },
   { prop: 'summary', label: '摘要', type: 'textarea' as const, hideInTable: true },
   { prop: 'content', label: '正文', type: 'textarea' as const, hideInTable: true },
   { prop: 'publishedAt', label: '发布月份', placeholder: '2026-08', width: '110' },

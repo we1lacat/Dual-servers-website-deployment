@@ -49,6 +49,9 @@ public class WorkItemController {
         if (entity.getStatus() == null) {
             entity.setStatus(1);
         }
+        if (entity.getCover() == null) {
+            entity.setCover("");
+        }
         return Result.ok(workItemService.create(entity));
     }
 

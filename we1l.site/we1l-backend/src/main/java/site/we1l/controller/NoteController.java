@@ -69,6 +69,12 @@ public class NoteController {
         if (entity.getViews() == null) {
             entity.setViews(0);
         }
+        if (entity.getCover() == null) {
+            entity.setCover("");
+        }
+        if (entity.getAuthor() == null) {
+            entity.setAuthor("we1l");
+        }
         return Result.ok(noteService.create(entity));
     }
 

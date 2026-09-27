@@ -350,7 +350,35 @@ h2.section-title {
 .notion-list .row:last-child { border-bottom: none; }
 .notion-list .row:hover { background: var(--bg-hover); }
 
+.row .row-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
 .row .row-title { flex: 1; font-weight: 500; }
+
+/* 可选缩略图（笔记 cover）：仅当该笔记配了图才出现，未配图时不影响原布局 */
+.row .row-thumb {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--bg-gray);
+}
+
+/* 笔记详情抽屉顶部的缩略图（有 cover 才展示） */
+.drawer-cover {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  background: var(--bg-gray);
+}
 
 .row .row-tag {
   font-size: 11.5px;
@@ -672,6 +700,36 @@ div.social-card { cursor: default; }
   font-size: 13.5px;
 }
 
+/* ---------- CrudTable：image 类型字段（图片上传） ---------- */
+
+/* 表格内缩略图 */
+.ct-thumb {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--bg-gray);
+}
+.ct-thumb-empty { color: var(--text-faint); }
+
+/* 表单内上传控件：预览图 + 清除按钮同一行 */
+.ct-upload {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ct-upload-preview {
+  display: block;
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--bg-gray);
+  cursor: pointer;
+}
+
 /* Element Plus 弹窗：圆角、padding、底色 */
 .el-dialog {
   border-radius: 10px !important;
@@ -866,6 +924,8 @@ body { overflow-x: hidden; }
   .notion-list .row { flex-wrap: wrap; gap: 6px 10px; padding: 12px 14px; font-size: 14px; }
   .notion-list .row .row-title { flex: 1 1 100%; }
   .notion-list .row .row-date { margin-left: auto; font-size: 12px; }
+  /* 缩略图在窄屏略收小，避免挤占标题 */
+  .notion-list .row .row-thumb { width: 38px; height: 38px; }
 
   .callout { font-size: 14px; padding: 12px 14px; }
 

@@ -24,10 +24,14 @@
           :prop="f.prop"
           :label="f.label"
           :width="f.width"
-          show-overflow-tooltip
+          :show-overflow-tooltip="f.type !== 'image'"
         >
           <template #default="{ row }">
             <span v-if="f.type === 'select'">{{ optionLabel(f, row[f.prop]) }}</span>
+            <template v-else-if="f.type === 'image'">
+              <img v-if="row[f.prop]" :src="row[f.prop]" class="ct-thumb" alt="" />
+              <span v-else class="ct-thumb-empty">—</span>
+            </template>
             <span v-else>{{ row[f.prop] }}</span>
           </template>
         </el-table-column>
@@ -84,6 +88,19 @@
             :rows="4"
             :placeholder="f.placeholder || ''"
           />
+          <!-- 图片上传（非必选）：选中即上传，返回 URL 写入表单；留空则前台按默认样式展示 -->
+          <div v-else-if="f.type === 'image'" class="ct-upload">
+            <el-upload
+              :show-file-list="false"
+              :before-upload="beforeUpload"
+              :http-request="uploadHandler(f.prop)"
+              accept="image/*"
+            >
+              <img v-if="form[f.prop]" :src="form[f.prop]" class="ct-upload-preview" alt="" />
+              <el-button v-else>{{ f.placeholder || '选择图片' }}</el-button>
+            </el-upload>
+            <el-button v-if="form[f.prop]" link type="danger" @click="form[f.prop] = ''">清除</el-button>
+          </div>
           <el-input v-else v-model="form[f.prop]" :placeholder="f.placeholder || ''" />
         </el-form-item>
       </el-form>
@@ -99,12 +116,12 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { adminPage, adminCreate, adminUpdate, adminDelete } from '@/api'
+import { adminPage, adminCreate, adminUpdate, adminDelete, uploadImage } from '@/api'
 
 export interface FieldDef {
   prop: string
   label: string
-  type?: 'text' | 'textarea' | 'number' | 'select'
+  type?: 'text' | 'textarea' | 'number' | 'select' | 'image'
   options?: { label: string; value: any }[]
   required?: boolean
   width?: string
@@ -146,6 +163,36 @@ const rules = computed<FormRules>(() => {
 function optionLabel(f: FieldDef, value: any) {
   const hit = f.options?.find((o) => o.value === value)
   return hit ? hit.label : String(value ?? '')
+}
+
+/* ---------------- 图片上传（type: 'image' 字段） ---------------- */
+
+/** 客户端预校验：非图片或超过 10MB（与后端 multipart 上限一致）直接拦下 */
+function beforeUpload(file: File) {
+  if (!file.type.startsWith('image/')) {
+    ElMessage.error('仅支持图片文件')
+    return false
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.error('图片不能超过 10MB')
+    return false
+  }
+  return true
+}
+
+/** 自定义上传：走统一 api 层，成功后把返回的 URL 写回表单字段 */
+async function doUpload(opt: any, prop: string) {
+  try {
+    form.value[prop] = await uploadImage(opt.file as File)
+    ElMessage.success('图片上传成功')
+  } catch {
+    /* 错误已由拦截器统一提示 */
+  }
+}
+
+/** 生成绑定到指定字段的 el-upload 请求处理器（避免在模板里写箭头函数与类型标注） */
+function uploadHandler(prop: string) {
+  return (opt: any) => doUpload(opt, prop)
 }
 
 async function load() {

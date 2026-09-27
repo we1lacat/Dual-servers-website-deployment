@@ -91,6 +91,8 @@ export interface Note {
   category?: string
   summary?: string
   content?: string
+  /** 可选缩略图：/uploads/xxx.png；为空时前台按默认样式展示 */
+  cover?: string
   author?: string
   views?: number
   publishedAt?: string
@@ -174,4 +176,14 @@ export function adminUpdate<T = any>(base: string, data: Record<string, any>) {
 }
 export function adminDelete(base: string, id: number | string) {
   return del(`/admin/${base}/${id}`)
+}
+
+/**
+ * 上传单张图片（后台），表单字段名固定为 file。
+ * 返回可直接用于 <img :src> 的 URL，如 /uploads/20260927102030_ab12cd34.png
+ */
+export function uploadImage(file: File) {
+  const fd = new FormData()
+  fd.append('file', file)
+  return post<string>('/admin/upload', fd)
 }

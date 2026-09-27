@@ -159,10 +159,6 @@ PUT    /api/admin/profile         # 站点档案（单记录）
 - §5 每日热备份 + 隧道推送 + 恢复演练
 - §8 凭据与安全基线
 
-### 容器化交付（可选）
-
-除 Tomcat 外，本项目也提供 Docker 交付形态：根目录 `docker-compose.prod.yml` + `nginx-default.conf` + 各模块 `Dockerfile`（多阶段构建，WAR/静态产物 → 运行态镜像），配合私有镜像仓库一键拉起。通用迁移思路与模板见仓库根目录 **[`docker-migration/`](../../docker-migration/)** 手册。
-
 ## 备注
 
 - 8080 端口被占用时：后端 `--server.port=xxxx`，前端 `BACKEND_URL=http://localhost:xxxx npm run dev`

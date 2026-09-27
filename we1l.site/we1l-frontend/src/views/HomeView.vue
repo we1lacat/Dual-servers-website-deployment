@@ -25,11 +25,11 @@
         <div v-else class="error-block">暂无趋势数据，请到后台添加</div>
 
         <div class="chart-api-note">
-          <span class="tag">REST API</span>
-          <span class="tag">Spring Boot 3</span>
-          <span class="tag">MyBatis-Plus</span>
-          <span class="tag">MySQL 8</span>
-          <span>前后端分离 · 数据可后台维护</span>
+          <span class="tag">访问量</span>
+          <span class="tag">负载</span>
+          <span class="tag">工作量</span>
+          <span class="tag">预期</span>
+          <span>数据可视化面板</span>
         </div>
       </div>
     </section>
@@ -39,19 +39,19 @@
     <!-- 快速入口 -->
     <section>
       <h2 class="section-title">快速入口</h2>
-      <p class="section-sub">常用的三个板块</p>
+      <p class="section-sub">常用</p>
       <div class="quick-grid">
         <router-link to="/notes" class="quick-card">
-          <div class="qc-title">笔记 / 服务</div>
-          <div class="qc-desc">作品展示 · 学习笔记 · 简历模板</div>
+          <div class="qc-title"> 服务</div>
+          <div class="qc-desc">作品展示 / 学习笔记 / 简历模板</div>
         </router-link>
         <router-link to="/about" class="quick-card">
-          <div class="qc-title">关于我</div>
-          <div class="qc-desc">正在学习 · 技能栈 · 能力雷达</div>
+          <div class="qc-title">关于</div>
+          <div class="qc-desc">正在学习 ·/技术栈 </div>
         </router-link>
         <router-link to="/admin" class="quick-card">
-          <div class="qc-title">后台管理</div>
-          <div class="qc-desc">站点内容增删改查 · 实时生效</div>
+          <div class="qc-title">站点管理</div>
+          <div class="qc-desc">内容修改 </div>
         </router-link>
       </div>
     </section>

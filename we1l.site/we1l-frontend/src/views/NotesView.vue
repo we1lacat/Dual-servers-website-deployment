@@ -1,16 +1,16 @@
 <template>
   <div class="page">
     <h1 class="page-title">笔记 / 服务</h1>
-    <p class="page-desc">作品展示 · 学习笔记 · 简历模板 —— 全部数据来自后端接口</p>
+    <p class="page-desc">展示 · 简历模板 —— 全部数据来自后端接口</p>
 
     <div class="callout">
-      本页内容在后台「作品展示 / 学习笔记 / 简历模板」模块中维护，保存后前台立即更新。
+      本页内容更新于九月二十七日。
     </div>
 
     <!-- 作品展示：GET /api/works -->
     <section>
       <h2 class="section-title">作品展示</h2>
-      <p class="section-sub">{{ works.length }} 个项目</p>
+      <p class="section-sub">{{ works.length }} 个项目对外开放</p>
       <div v-if="loading" class="skeleton-block">
         <div class="skeleton-line" style="width: 85%"></div>
         <div class="skeleton-line" style="width: 70%"></div>
@@ -47,7 +47,11 @@
       </div>
       <div v-else class="notion-list">
         <div v-for="n in notes" :key="n.id" class="row" @click="openNote(n)">
-          <span class="row-title">{{ n.title }}</span>
+          <!-- 可选缩略图：配了 cover 才渲染；无 cover 时行内只有标题，与原本样式完全一致 -->
+          <div class="row-main">
+            <img v-if="n.cover" :src="n.cover" class="row-thumb" alt="" loading="lazy" />
+            <span class="row-title">{{ n.title }}</span>
+          </div>
           <span class="row-tag">{{ n.category }}</span>
           <span class="row-date">{{ n.publishedAt }}</span>
         </div>
@@ -98,6 +102,8 @@
     <!-- 笔记详情抽屉（移动端全屏） -->
     <el-drawer v-model="drawerVisible" :title="currentNote?.title || '笔记'" :size="isMobile ? '100%' : '480px'">
       <div v-if="currentNote">
+        <!-- 可选缩略图：笔记配了图才在详情顶部展示 -->
+        <img v-if="currentNote.cover" :src="currentNote.cover" class="drawer-cover" alt="" />
         <div style="font-size: 12.5px; color: var(--text-faint); margin-bottom: 16px">
           {{ currentNote.category }} · {{ currentNote.publishedAt }} · 阅读 {{ currentNote.views }}
         </div>

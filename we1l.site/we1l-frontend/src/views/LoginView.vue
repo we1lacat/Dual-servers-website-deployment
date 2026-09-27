@@ -7,7 +7,7 @@
         <span class="badge">Admin</span>
       </div>
       <h1>登录后台</h1>
-      <p class="lead">站点内容管理 · Spring Boot 3 · Vue 3</p>
+      <p class="lead">站点内容管理</p>
 
       <el-form
         ref="formRef"

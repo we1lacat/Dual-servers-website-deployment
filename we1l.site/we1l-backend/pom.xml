@@ -14,9 +14,9 @@
   <groupId>site.we1l</groupId>
   <artifactId>we1l-backend</artifactId>
   <version>1.0.0</version>
-  <packaging>war</packaging>
+  <packaging>jar</packaging>
   <name>we1l-backend</name>
-  <description>we1l.site 个人站点后端服务（Spring Boot 3 + MyBatis-Plus + MySQL），WAR 部署到外置 Tomcat</description>
+  <description>we1l.site 个人站点后端服务（Spring Boot 3 + MyBatis-Plus + SQLite），可执行 jar 直跑 / 容器化部署</description>
 
   <properties>
     <java.version>21</java.version>
@@ -58,12 +58,11 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- 外置 Tomcat 部署：内嵌 Tomcat 标记 provided，WAR 产物不重复打包；
-         本地开发 `mvn spring-boot:run` 不受影响（provided 在运行类路径上） -->
+    <!-- 内嵌 Tomcat：随 fat jar 一起打包，java -jar 直跑 / 容器化部署；
+         注意不能标 provided，否则可执行 jar 缺容器、启动即失败 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-tomcat</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>

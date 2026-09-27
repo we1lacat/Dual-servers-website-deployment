@@ -60,6 +60,15 @@ mybatis-plus:
 we1l:
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+
+  # ===== 上传文件（后台缩略图等） =====
+  # dir       : 图片落盘目录。容器内指向挂载卷（UPLOAD_DIR），本地开发默认 ./uploads
+  # url-prefix: 静态访问前缀，由 WebConfig 映射为 dir 的静态资源；返回给前端的 URL 形如 /uploads/xxx.png
+  # ⚠️ 该目录需可写；Docker 部署须以 bind mount 挂到宿主，否则镜像重建即丢图
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
+    url-prefix: /uploads
+
   auth:
     jwt:
       secret: ${JWT_SECRET:we1l-site-default-secret-please-replace-in-production-32bytes-min}

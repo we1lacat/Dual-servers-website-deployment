@@ -2,7 +2,7 @@
   <div class="page">
     <h1 class="page-title">关于我</h1>
     <p class="page-desc">
-      {{ profile?.ownerName || 'we1l' }} · {{ profile?.ownerTitle || '全栈方向 · 持续折腾中' }}
+      {{ profile?.ownerName || 'we1l' }} · {{ profile?.ownerTitle || ' 持续学习中' }}
     </p>
 
     <div class="callout">
@@ -31,7 +31,7 @@
     <!-- 技能进度条：GET /api/skills?type=BAR -->
     <section>
       <h2 class="section-title">技能栈</h2>
-      <p class="section-sub">进度条数据来自接口 · 后台可维护</p>
+      <p class="section-sub">并非精通，并非并非</p>
       <div v-if="loading" class="skeleton-block">
         <div class="skeleton-line" style="width: 90%"></div>
         <div class="skeleton-line" style="width: 76%"></div>
@@ -59,7 +59,7 @@
     <!-- 能力雷达：GET /api/skills?type=RADAR -->
     <section>
       <h2 class="section-title">能力雷达</h2>
-      <p class="section-sub">六维评估 · ECharts 雷达图</p>
+      <p class="section-sub">六维评估</p>
       <div class="radar-block">
         <SkillRadar v-if="radarSkills.length" :skills="radarSkills" />
         <div v-else class="radar-canvas" style="display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 13px">
@@ -67,7 +67,7 @@
         </div>
         <div class="radar-legend">
           <b>综合评估</b>
-          数据来自 <code>GET /api/skills?type=RADAR</code>，维度与分值均可在后台调整；
+          数据来自 <code>GET /api/skills?type=RADAR</code>，正在填补空缺；
           雷达图由 ECharts 渲染，随接口数据实时更新。
         </div>
       </div>
@@ -78,7 +78,7 @@
     <!-- 社交矩阵：GET /api/socials -->
     <section>
       <h2 class="section-title">社交矩阵</h2>
-      <p class="section-sub">{{ socials.length }} 个渠道</p>
+      <p class="section-sub">{{ socials.length }} 个渠道找到我</p>
       <div v-if="loading" class="skeleton-block">
         <div class="skeleton-line" style="width: 88%"></div>
         <div class="skeleton-line" style="width: 72%"></div>

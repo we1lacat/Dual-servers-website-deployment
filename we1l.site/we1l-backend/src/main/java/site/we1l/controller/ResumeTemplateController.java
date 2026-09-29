@@ -20,7 +20,7 @@ import site.we1l.service.ResumeTemplateService;
 import java.util.List;
 
 /**
- * 「笔记 / 服务」— 简历模板。
+ * 「服务」— 简历模板。
  * 前台：GET /api/resumes
  * 后台：/api/admin/resumes/**
  */

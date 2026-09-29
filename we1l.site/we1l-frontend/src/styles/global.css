@@ -297,7 +297,7 @@ h2.section-title {
 .quick-card .qc-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
 .quick-card .qc-desc { font-size: 13px; color: var(--text-secondary); }
 
-/* ---------- 笔记 / 服务页 ---------- */
+/* ---------- 服务页（作品展示 / 学习笔记 / 简历模板） ---------- */
 
 .gallery {
   display: grid;
@@ -316,7 +316,15 @@ h2.section-title {
 
 .work-card:hover { border-color: var(--border-strong); }
 
-.work-thumb { aspect-ratio: 16 / 10; }
+.work-thumb { aspect-ratio: 16 / 10; overflow: hidden; }
+
+/* 可选缩略图（作品 cover）：有图时铺满缩略图框；无图则只显示上面的渐变色块 */
+.work-thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .thumb-1 { background: rgba(43, 43, 43, 0.2); }
 .thumb-2 { background: rgba(35, 131, 226, 0.2); }

@@ -11,6 +11,8 @@ import CrudTable from '@/admin/components/CrudTable.vue'
 
 const fields = [
   { prop: 'title', label: '作品名称', required: true },
+  // 可选缩略图：上传后前台作品卡展示缩略图；留空则沿用默认渐变色块
+  { prop: 'cover', label: '缩略图', type: 'image' as const, placeholder: '选择图片（可选）', width: '90' },
   { prop: 'techMeta', label: '技术栈' },
   { prop: 'category', label: '分类', placeholder: '桌面应用 / Web / 工具…' },
   { prop: 'link', label: '链接', placeholder: 'https://... 留空则不可点击' },

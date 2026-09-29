@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 「笔记 / 服务」— 可下载的简历模板。
+ * 「服务」— 可下载的简历模板。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

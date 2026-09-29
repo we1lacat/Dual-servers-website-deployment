@@ -5,7 +5,7 @@
       <el-option label="雷达图（RADAR）" value="RADAR" />
     </el-select>
   </div>
-  <CrudTable title="技能管理" base="skills" :fields="fields" :extra-query="{ type }" />
+  <CrudTable title="技能" base="skills" :fields="fields" :extra-query="{ type }" />
 </template>
 
 <script setup lang="ts">

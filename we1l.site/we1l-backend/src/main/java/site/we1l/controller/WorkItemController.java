@@ -20,7 +20,7 @@ import site.we1l.service.WorkItemService;
 import java.util.List;
 
 /**
- * 「笔记 / 服务」— 作品展示。
+ * 「服务」— 作品展示。
  * 前台：GET /api/works
  * 后台：/api/admin/works/**
  */

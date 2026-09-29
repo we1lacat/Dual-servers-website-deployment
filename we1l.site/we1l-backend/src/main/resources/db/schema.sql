@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS social_link (
     updated_at TEXT        NULL
 );
 
--- 「笔记 / 服务」— 作品展示
+-- 「服务」— 作品展示
 -- 表名用 work_item 而非 work：WORK 在部分数据库中属于保留字
 CREATE TABLE IF NOT EXISTS work_item (
     id         INTEGER     PRIMARY KEY AUTOINCREMENT,
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS work_item (
     updated_at TEXT        NULL
 );
 
--- 「笔记 / 服务」— 学习笔记
+-- 「服务」— 学习笔记
 CREATE TABLE IF NOT EXISTS note (
     id           INTEGER     PRIMARY KEY AUTOINCREMENT,
     title        TEXT        NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS note (
     updated_at   TEXT        NULL
 );
 
--- 「笔记 / 服务」— 简历模板
+-- 「服务」— 简历模板
 CREATE TABLE IF NOT EXISTS resume_template (
     id         INTEGER     PRIMARY KEY AUTOINCREMENT,
     title      TEXT        NOT NULL,

@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 「笔记 / 服务」— 作品展示条目。
+ * 「服务」— 作品展示条目。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

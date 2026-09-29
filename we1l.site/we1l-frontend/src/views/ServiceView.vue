@@ -1,10 +1,11 @@
 <template>
   <div class="page">
-    <h1 class="page-title">笔记 / 服务</h1>
-    <p class="page-desc">展示 · 简历模板 —— 全部数据来自后端接口</p>
+    <h1 class="page-title">服务</h1>
+    <p class="page-desc">作品展示 · 学习笔记 · 简历模板 —— 数据来自后端接口</p>
 
-    <div class="callout">
-      本页内容更新于九月二十七日。
+    <!-- 本页内容更新时间：取作品/笔记/简历中最新的 updatedAt，动态计算 -->
+    <div v-if="updatedDay" class="callout">
+      本页内容更新于{{ updatedDay }}。
     </div>
 
     <!-- 作品展示：GET /api/works -->
@@ -25,7 +26,10 @@
           :rel="w.link ? 'noopener' : undefined"
           class="work-card"
         >
-          <div class="work-thumb" :class="`thumb-${(i % 6) + 1}`"></div>
+          <div class="work-thumb" :class="`thumb-${(i % 6) + 1}`">
+            <!-- 可选缩略图：配了 cover 才渲染；未配图则保持原渐变色块 -->
+            <img v-if="w.cover" :src="w.cover" class="work-thumb-img" :alt="w.title" loading="lazy" />
+          </div>
           <div class="work-body">
             <div class="work-title">{{ w.title }}</div>
             <div class="work-meta">{{ w.techMeta }}<span v-if="w.category"> · {{ w.category }}</span></div>
@@ -117,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { fetchWorks, fetchNotes, fetchNote, type WorkItem, type Note, type ResumeTemplate } from '@/api'
 
 const works = ref<WorkItem[]>([])
@@ -127,6 +131,32 @@ const loading = ref(true)
 
 const drawerVisible = ref(false)
 const currentNote = ref<Note | null>(null)
+
+/* ---------------- 本页内容更新时间 ---------------- */
+/* 取「作品 / 笔记 / 简历」三者中最新的 updatedAt —— 即整页内容最后一次变更的时间；
+   全部为空时返回空串，模板里用 v-if 把 callout 整体隐去。 */
+
+const CN_DIGIT = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+
+/** 1~31 → 中文数字：十 / 十一 / 二十 / 二十七 / 三十一 */
+function cnNum(n: number): string {
+  if (n <= 10) return n === 10 ? '十' : CN_DIGIT[n]
+  if (n < 20) return '十' + CN_DIGIT[n - 10]
+  const tens = Math.floor(n / 10)
+  const ones = n % 10
+  return CN_DIGIT[tens] + '十' + (ones ? CN_DIGIT[ones] : '')
+}
+
+const updatedDay = computed(() => {
+  const stamps = [...works.value, ...notes.value, ...resumes.value]
+    .map((x) => x.updatedAt)
+    .filter((s): s is string => !!s)
+    .map((s) => new Date(s).getTime())
+    .filter((t) => !Number.isNaN(t))
+  if (!stamps.length) return ''
+  const d = new Date(Math.max(...stamps))
+  return `${cnNum(d.getMonth() + 1)}月${cnNum(d.getDate())}日`
+})
 
 /* 移动端判定：抽屉全屏展示，正文内容更宽松 */
 const isMobile = ref(typeof window !== 'undefined' && window.innerWidth <= 768)

@@ -21,8 +21,11 @@ import java.util.List;
 
 /**
  * 首页趋势数据。
- * 前台：GET /api/trend
- * 后台：/api/admin/trend/**
+ * 前台：GET /api/trends
+ * 后台：/api/admin/trends/**
+ *
+ * 集合路径统一用复数，与 notes / works / resumes / learnings / skills / socials 保持一致；
+ * 旧的单数路径 /api/trend 作为兼容别名保留（见 list()），便于前后端滚更期间不断链。
  */
 @RestController
 @RequestMapping
@@ -31,12 +34,13 @@ public class SiteTrendController {
 
     private final SiteTrendService siteTrendService;
 
-    @GetMapping("/api/trend")
+    /** 前台列表；同时兼容旧的单数路径 /api/trend */
+    @GetMapping({"/api/trends", "/api/trend"})
     public Result<List<SiteTrend>> list() {
         return Result.ok(siteTrendService.listForFront());
     }
 
-    @GetMapping("/api/admin/trend/page")
+    @GetMapping("/api/admin/trends/page")
     public Result<Page<SiteTrend>> page(@RequestParam(defaultValue = "1") long current,
                                         @RequestParam(defaultValue = "10") long size) {
         return Result.ok(siteTrendService.page(new Page<>(current, size), Wrappers.<SiteTrend>lambdaQuery()
@@ -44,17 +48,17 @@ public class SiteTrendController {
                 .orderByAsc(SiteTrend::getId)));
     }
 
-    @PostMapping("/api/admin/trend")
+    @PostMapping("/api/admin/trends")
     public Result<Boolean> create(@Valid @RequestBody SiteTrend entity) {
         return Result.ok(siteTrendService.create(entity));
     }
 
-    @PutMapping("/api/admin/trend")
+    @PutMapping("/api/admin/trends")
     public Result<Boolean> update(@Valid @RequestBody SiteTrend entity) {
         return Result.ok(siteTrendService.modify(entity));
     }
 
-    @DeleteMapping("/api/admin/trend/{id}")
+    @DeleteMapping("/api/admin/trends/{id}")
     public Result<Boolean> delete(@PathVariable Long id) {
         return Result.ok(siteTrendService.removeChecked(id));
     }

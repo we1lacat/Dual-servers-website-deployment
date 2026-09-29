@@ -20,7 +20,7 @@ import site.we1l.service.NoteService;
 import java.util.List;
 
 /**
- * 「笔记 / 服务」— 学习笔记。
+ * 「服务」— 学习笔记。
  * 前台：GET /api/notes、GET /api/notes/{id}
  * 后台：/api/admin/notes/**
  */

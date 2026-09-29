@@ -1,7 +1,7 @@
 <template>
   <CrudTable
     title="站点趋势"
-    base="trend"
+    base="trends"
     :fields="fields"
   />
 </template>

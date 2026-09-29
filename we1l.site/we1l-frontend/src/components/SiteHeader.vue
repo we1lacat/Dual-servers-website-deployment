@@ -10,7 +10,7 @@
 
       <div class="nav-links">
         <router-link to="/">首页</router-link>
-        <router-link to="/notes">笔记 / 服务</router-link>
+        <router-link to="/service">服务</router-link>
         <router-link to="/about">关于我</router-link>
       </div>
 
@@ -58,7 +58,7 @@
     >
       <nav class="mobile-nav-list">
         <router-link to="/">首页</router-link>
-        <router-link to="/notes">笔记 / 服务</router-link>
+        <router-link to="/service">服务</router-link>
         <router-link to="/about">关于我</router-link>
         <router-link v-if="!authStore.isAuthenticated()" to="/login">登录</router-link>
         <template v-else>

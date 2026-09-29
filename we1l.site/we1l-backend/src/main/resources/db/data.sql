@@ -10,6 +10,8 @@
 -- ============================================================
 
 -- 站点档案（单主键 id=1）------------------------------------
+-- ⚠️ site_slogan 的值与 SiteProfileService.DEFAULT_SLOGAN 保持一致：
+--    前者是「全新库的首行数据」，后者是「行缺失时的兜底」，两处路径不同故都保留。
 INSERT INTO site_profile (id, site_name, site_slogan, owner_name, owner_title, owner_avatar,
                           email, icp_no, icp_url, footer_note, updated_at)
 SELECT 1, 'we1l.site', '个人主页 · 数据看板 · 笔记与作品存档', 'we1l', '全栈方向 · 持续折腾中', '',

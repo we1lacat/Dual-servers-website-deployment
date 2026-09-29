@@ -78,11 +78,14 @@ export interface WorkItem {
   id?: number
   title: string
   techMeta?: string
+  /** 可选缩略图：/uploads/xxx.png；为空时前台沿用默认渐变色块 */
   cover?: string
   link?: string
   category?: string
   sortOrder?: number
   status?: number
+  /** 最后更新时间（后端 BaseEntity 维护），供前台「本页内容更新于…」取最大值 */
+  updatedAt?: string
 }
 
 export interface Note {
@@ -97,6 +100,8 @@ export interface Note {
   views?: number
   publishedAt?: string
   status?: number
+  /** 最后更新时间（后端 BaseEntity 维护） */
+  updatedAt?: string
 }
 
 export interface ResumeTemplate {
@@ -107,6 +112,8 @@ export interface ResumeTemplate {
   fileUrl?: string
   sortOrder?: number
   status?: number
+  /** 最后更新时间（后端 BaseEntity 维护） */
+  updatedAt?: string
 }
 
 export interface PageResult<T> {
@@ -150,7 +157,7 @@ export interface OpsStatus {
 /* ---------------- 前台只读接口 ---------------- */
 
 export const fetchProfile = () => get<SiteProfile>('/profile')
-export const fetchTrend = () => get<SiteTrend[]>('/trend')
+export const fetchTrend = () => get<SiteTrend[]>('/trends')
 export const fetchLearnings = () => get<LearningItem[]>('/learnings')
 export const fetchSkills = (type: string) => get<Skill[]>('/skills', { params: { type } })
 export const fetchSocials = () => get<SocialLink[]>('/socials')

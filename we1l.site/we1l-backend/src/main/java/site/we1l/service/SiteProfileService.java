@@ -13,6 +13,13 @@ public class SiteProfileService extends BaseService<SiteProfileMapper, SiteProfi
 
     private static final Long PROFILE_ID = 1L;
 
+    /**
+     * 站点标语默认值（数据库无档案行时使用）。
+     * ⚠️ 该值同时出现在 db/data.sql 的站点档案种子里；两处需保持一致 ——
+     *    data.sql 负责「全新库的首行数据」，本常量负责「行缺失时的兜底」，路径不同故都保留。
+     */
+    public static final String DEFAULT_SLOGAN = "个人主页 · 数据看板 · 笔记与作品存档";
+
     /** 前台：读取站点档案；若数据库为空则返回带默认值的对象，避免页面白屏 */
     public SiteProfile getProfile() {
         SiteProfile profile = getById(PROFILE_ID);
@@ -52,7 +59,7 @@ public class SiteProfileService extends BaseService<SiteProfileMapper, SiteProfi
         SiteProfile p = new SiteProfile();
         p.setId(PROFILE_ID);
         p.setSiteName("we1l.site");
-        p.setSiteSlogan("个人主页 · 数据看板 · 笔记与作品存档");
+        p.setSiteSlogan(DEFAULT_SLOGAN);
         p.setOwnerName("we1l");
         p.setOwnerTitle("全栈方向 · 持续折腾中");
         p.setEmail("hi@we1l.site");

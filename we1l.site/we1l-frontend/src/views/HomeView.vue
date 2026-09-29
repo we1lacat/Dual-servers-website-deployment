@@ -2,15 +2,17 @@
   <div class="page">
     <h1 class="page-title">{{ profile?.siteName || 'we1l.site' }}</h1>
     <p class="page-desc">
-      {{ profile?.siteSlogan || '个人主页 · 数据看板 · 笔记与作品存档' }}
+      <!-- 站点标语只有 /api/profile 一个来源（库里的 site_profile 表），此处不再硬编码兜底，
+           避免与后端默认值 / index.html meta 三处漂移；接口未回来时仅短暂为空 -->
+      {{ profile?.siteSlogan }}
     </p>
 
-    <!-- 站点趋势折线图：GET /api/trend -->
+    <!-- 站点趋势折线图：GET /api/trends -->
     <section>
       <div class="chart-block">
         <div class="chart-head">
           <span class="chart-title">站点数据 · 2026</span>
-          <span class="chart-meta">GET /api/trend · 每月自动汇总</span>
+          <span class="chart-meta">GET /api/trends · 每月自动汇总</span>
         </div>
 
         <div v-if="loading" class="skeleton-block" style="border: none; padding: 0">
@@ -41,8 +43,8 @@
       <h2 class="section-title">快速入口</h2>
       <p class="section-sub">常用</p>
       <div class="quick-grid">
-        <router-link to="/notes" class="quick-card">
-          <div class="qc-title"> 服务</div>
+        <router-link to="/service" class="quick-card">
+          <div class="qc-title">服务</div>
           <div class="qc-desc">作品展示 / 学习笔记 / 简历模板</div>
         </router-link>
         <router-link to="/about" class="quick-card">

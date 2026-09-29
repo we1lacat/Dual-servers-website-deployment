@@ -71,7 +71,7 @@ npm run dev                 # http://localhost:5173，/api 代理到 8080
 | 路径 | 说明 |
 |---|---|
 | http://localhost:5173/ | 前台首页（趋势折线图 + 快速入口） |
-| http://localhost:5173/notes | 笔记 / 服务（作品 + 笔记 + 简历模板） |
+| http://localhost:5173/service | 服务（作品展示 + 学习笔记 + 简历模板） |
 | http://localhost:5173/about | 关于我（正在学习 + 技能条 + 雷达图 + 社交矩阵） |
 | http://localhost:5173/login | 管理员登录（右上角） |
 | http://localhost:5173/admin | 后台管理（需登录；9 个 CRUD 模块） |
@@ -110,7 +110,7 @@ npm run dev                 # http://localhost:5173，/api 代理到 8080
 
 ```
 GET /api/profile
-GET /api/trend
+GET /api/trends
 GET /api/learnings
 GET /api/skills?type=BAR|RADAR
 GET /api/socials

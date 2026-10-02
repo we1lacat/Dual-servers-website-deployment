@@ -1,0 +1,66 @@
+# ============================================================
+# we1l.site · CI（质量门禁，不含部署）
+# 触发：push / PR 到 main
+# 目标：后端编译+打包（Java 21）、前端类型检查+构建（Node 20）
+# 结构：仓库根 = we1l.site 的父目录；前后端分别在
+#        we1l.site/we1l-backend、we1l.site/we1l-frontend
+# 说明：后端目前无 src/test，mvn verify 主要守"能编译 + 能打包"；
+#        前端 npm run build = vue-tsc --noEmit && vite build
+# 后续（P1 CD）可再补：tag → build+push ACR → SSH 部署 B 机 → smoke test
+# ============================================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: backend · mvn verify (Java 21)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: we1l.site/we1l-backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build & test
+        run: mvn -B -ntp verify
+
+  frontend:
+    name: frontend · typecheck + build (Node 20)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: we1l.site/we1l-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: we1l.site/we1l-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check & build
+        run: npm run build

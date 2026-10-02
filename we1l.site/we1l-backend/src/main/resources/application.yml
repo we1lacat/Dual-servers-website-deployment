@@ -87,6 +87,22 @@ we1l:
     backup-dir: ${OPS_BACKUP_DIR:/opt/we1l/backup}
     backup-max-age-hours: ${OPS_BACKUP_MAX_AGE_HOURS:24}
 
+# ===== Actuator / 指标暴露（供 A 机 Prometheus 抓取）=====
+# 只暴露 health 与 prometheus；不给 env/beans/configprops 等敏感端点。
+# 端点在 SecurityConfig 里显式放行且不做鉴权 —— 安全边界靠网络：
+# compose 把容器 8080 只绑 WireGuard 内网 IP（10.10.0.1），公网不可达。
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: never          # 只回 {"status":"UP"}，不泄露组件细节
+  metrics:
+    tags:
+      application: we1l-backend    # 打上应用标签，便于在 Prometheus 里按服务筛选
+
 logging:
   level:
     site.we1l: debug

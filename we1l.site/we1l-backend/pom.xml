@@ -70,6 +70,19 @@
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
 
+    <!-- Actuator + Prometheus 指标导出：供 A 机 Prometheus 抓 /actuator/prometheus
+         ⚠️ 端点不做鉴权（Prometheus 抓取不带 JWT），安全边界靠网络：
+         compose 把 8080 只绑到 WireGuard 内网 IP 10.10.0.1，公网不可达 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
     <!-- MyBatis-Plus（Spring Boot 3 专用 starter） -->
     <dependency>
       <groupId>com.baomidou</groupId>

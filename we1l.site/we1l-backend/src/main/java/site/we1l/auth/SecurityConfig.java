@@ -28,6 +28,9 @@ import java.util.Map;
  * - /api/auth/** 放行（登录接口与公开认证）
  * - /api/admin/** 需要 JWT（含 Authorization: Bearer ...）
  * - 其他 /api/** 全部放行（前台只读接口、统计接口）
+ * - /actuator/health、/actuator/prometheus 放行（供 Prometheus 抓取，抓取方不带 JWT）。
+ *   ⚠️ 这两个端点不做鉴权，安全边界是网络层：compose 把容器 8080 只绑到
+ *   WireGuard 内网 IP（10.10.0.1），公网不可达。
  * - CSRF 关闭（前后端分离，纯 stateless JWT）
  * - 401 统一返回 {code:401, message:"未登录或登录已过期", data:null}
  */
@@ -81,6 +84,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").authenticated()
                         .requestMatchers("/api/**").permitAll()
+                        // 显式放行，避免将来收紧 .anyRequest() 时静默掐断 Prometheus 抓取
+                        .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
                         .anyRequest().permitAll()
                 )
                 .exceptionHandling(eh -> eh.authenticationEntryPoint(authEntryPoint))

@@ -1,0 +1,94 @@
+# ============================================================
+# we1l.site · CD（tag v* 触发：构建推 ACR → 受限 SSH 部署 B 机 → 冒烟）
+#
+# 前置 Secrets（仓库 Settings → Secrets and variables → Actions）：
+#   ACR_REGISTRY / ACR_USERNAME / ACR_PASSWORD
+#   B_HOST / B_USER / B_SSH_KEY   ← B_SSH_KEY 是「受限 key」：
+#        B 机 authorized_keys 里该 key 被 command= 锁定，只跑 remote-deploy.sh，
+#        且 restrict 禁用了 pty / 端口转发 / agent 转发。
+#
+# 设计说明：
+#   - SSH 用系统自带 ssh（不引入第三方 action，减少供应链面）；
+#   - 传入的命令会被 forced command 忽略，返回码即 remote-deploy.sh 的返回码；
+#   - 构建与本地 build-push.sh 一致，带 --provenance=false --sbom=false（否则 ACR 拒 attestation）。
+# ============================================================
+name: CD
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-push:
+    name: build & push to ACR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to ACR
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ secrets.ACR_PASSWORD }}" | \
+            docker login -u "${{ secrets.ACR_USERNAME }}" --password-stdin "${{ secrets.ACR_REGISTRY }}"
+
+      - name: Build & push backend
+        env:
+          IMG: ${{ secrets.ACR_REGISTRY }}/we1l/site
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          docker build --provenance=false --sbom=false \
+            -t "$IMG:backend" -f we1l.site/we1l-backend/Dockerfile we1l.site/we1l-backend
+          docker tag "$IMG:backend" "$IMG:backend-$TAG"
+          docker push "$IMG:backend"
+          docker push "$IMG:backend-$TAG"
+
+      - name: Build & push frontend
+        env:
+          IMG: ${{ secrets.ACR_REGISTRY }}/we1l/site
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          docker build --provenance=false --sbom=false \
+            -t "$IMG:frontend" -f we1l.site/we1l-frontend/Dockerfile we1l.site/we1l-frontend
+          docker tag "$IMG:frontend" "$IMG:frontend-$TAG"
+          docker push "$IMG:frontend"
+          docker push "$IMG:frontend-$TAG"
+
+  deploy:
+    name: deploy to B (restricted key)
+    needs: build-push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Trigger remote deploy over SSH
+        env:
+          B_HOST: ${{ secrets.B_HOST }}
+          B_USER: ${{ secrets.B_USER }}
+          B_SSH_KEY: ${{ secrets.B_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$B_SSH_KEY" | tr -d '\r' > ~/.ssh/b_deploy
+          chmod 600 ~/.ssh/b_deploy
+          ssh -i ~/.ssh/b_deploy -o IdentitiesOnly=yes -o BatchMode=yes \
+              -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+              "$B_USER@$B_HOST" "deploy ${{ github.ref_name }}"
+
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 6); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://we1l.site/api/works || true)
+            if [ "$code" = "200" ]; then echo "SMOKE_OK: /api/works -> 200"; exit 0; fi
+            echo "attempt $i: got '$code', retry…"; sleep 5
+          done
+          echo "SMOKE_FAILED"; exit 1

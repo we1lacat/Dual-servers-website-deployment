@@ -1,16 +1,15 @@
 # ============================================================
-# we1l.site · CD（tag v* 触发：构建推 ACR → 受限 SSH 部署 B 机 → 冒烟）
+# we1l.site · CD
 #
-# 前置 Secrets（仓库 Settings → Secrets and variables → Actions）：
-#   ACR_REGISTRY / ACR_USERNAME / ACR_PASSWORD
-#   B_HOST / B_USER
-#   B_SSH_KEY_B64  ← 【推荐】私钥的 base64（单行，无换行）：
-#        base64 -w0 私钥文件         # Linux/macOS 用 base64 -b 0（macOS）
-#        # Windows/WSL: base64 -w0 私钥文件
-#     这样彻底避免多行 PEM 被编辑器/粘贴改坏（曾导致 "Load key: error in libcrypto"）。
-#     另兼容旧写法：若未设 B_SSH_KEY_B64，则回退读 B_SSH_KEY（纯 PEM，含换行，自动去 \r）。
-#   说明：B 机 authorized_keys 里该 key 被 command= 锁定，只跑 remote-deploy.sh，
-#        且 restrict 禁用了 pty/端口转发/agent 转发。
+#   1) push tag v*      → build-push：构建并推 ACR（:backend/:frontend + :backend-<tag>/:frontend-<tag>）
+#   2) workflow_dispatch（手填 version）→ promote：把 :backend-<ver>/:frontend-<ver>
+#                                          重新提升为 :backend/:frontend = 【发布回滚/定点发布】
+#   两路都汇到 deploy：受限 SSH 触发 B 机 remote-deploy.sh（pull + up -d）→ 冒烟
+#
+# Secrets：ACR_REGISTRY / ACR_USERNAME / ACR_PASSWORD；B_HOST / B_USER / B_SSH_KEY_B64
+# 回滚设计说明：版本选择放在 CI 侧（CI 有 ACR 凭据）。
+#   这样 B 机 .env.prod 保持 root 属主、ops 无需写权限 →
+#   避免「ops 可指定任意镜像 + NOPASSWD compose up」造成的免密提权面。
 # ============================================================
 name: CD
 
@@ -18,6 +17,10 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "回滚/定点发布的版本 tag（例：v1.0.0）"
+        required: true
 
 permissions:
   contents: read
@@ -29,6 +32,7 @@ concurrency:
 jobs:
   build-push:
     name: build & push to ACR
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,9 +67,37 @@ jobs:
           docker push "$IMG:frontend"
           docker push "$IMG:frontend-$TAG"
 
+  promote:
+    name: rollback · promote version to current
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to ACR
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ secrets.ACR_PASSWORD }}" | \
+            docker login -u "${{ secrets.ACR_USERNAME }}" --password-stdin "${{ secrets.ACR_REGISTRY }}"
+
+      - name: Promote version tags to current
+        env:
+          IMG: ${{ secrets.ACR_REGISTRY }}/we1l/site
+          VER: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          case "$VER" in v[0-9]*) : ;; *) echo "::error::版本需形如 v1.2.3：'$VER'"; exit 2 ;; esac
+          case "$VER" in *[!A-Za-z0-9._-]*) echo "::error::版本含非法字符：'$VER'"; exit 2 ;; esac
+          for svc in backend frontend; do
+            echo "==> promote $svc-$VER  ->  $svc"
+            docker pull "$IMG:$svc-$VER"
+            docker tag  "$IMG:$svc-$VER" "$IMG:$svc"
+            docker push "$IMG:$svc"
+          done
+          echo "### 回滚/定点发布：\`$VER\` 已提升为当前 tag" >> "$GITHUB_STEP_SUMMARY"
+
   deploy:
     name: deploy to B (restricted key)
-    needs: build-push
+    needs: [build-push, promote]
+    if: ${{ always() && (needs.build-push.result == 'success' || needs.promote.result == 'success') }}
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -92,7 +124,7 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/b_deploy -o IdentitiesOnly=yes -o BatchMode=yes \
               -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
-              "$B_USER@$B_HOST" "deploy ${{ github.ref_name }}"
+              "$B_USER@$B_HOST" deploy
 
       - name: Smoke test
         run: |

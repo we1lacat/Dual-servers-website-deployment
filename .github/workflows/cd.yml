@@ -3,14 +3,14 @@
 #
 # 前置 Secrets（仓库 Settings → Secrets and variables → Actions）：
 #   ACR_REGISTRY / ACR_USERNAME / ACR_PASSWORD
-#   B_HOST / B_USER / B_SSH_KEY   ← B_SSH_KEY 是「受限 key」：
-#        B 机 authorized_keys 里该 key 被 command= 锁定，只跑 remote-deploy.sh，
-#        且 restrict 禁用了 pty / 端口转发 / agent 转发。
-#
-# 设计说明：
-#   - SSH 用系统自带 ssh（不引入第三方 action，减少供应链面）；
-#   - 传入的命令会被 forced command 忽略，返回码即 remote-deploy.sh 的返回码；
-#   - 构建与本地 build-push.sh 一致，带 --provenance=false --sbom=false（否则 ACR 拒 attestation）。
+#   B_HOST / B_USER
+#   B_SSH_KEY_B64  ← 【推荐】私钥的 base64（单行，无换行）：
+#        base64 -w0 私钥文件         # Linux/macOS 用 base64 -b 0（macOS）
+#        # Windows/WSL: base64 -w0 私钥文件
+#     这样彻底避免多行 PEM 被编辑器/粘贴改坏（曾导致 "Load key: error in libcrypto"）。
+#     另兼容旧写法：若未设 B_SSH_KEY_B64，则回退读 B_SSH_KEY（纯 PEM，含换行，自动去 \r）。
+#   说明：B 机 authorized_keys 里该 key 被 command= 锁定，只跑 remote-deploy.sh，
+#        且 restrict 禁用了 pty/端口转发/agent 转发。
 # ============================================================
 name: CD
 
@@ -69,16 +69,27 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Trigger remote deploy over SSH
+      - name: Prepare SSH key
         env:
-          B_HOST: ${{ secrets.B_HOST }}
-          B_USER: ${{ secrets.B_USER }}
+          B_SSH_KEY_B64: ${{ secrets.B_SSH_KEY_B64 }}
           B_SSH_KEY: ${{ secrets.B_SSH_KEY }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
-          printf '%s\n' "$B_SSH_KEY" | tr -d '\r' > ~/.ssh/b_deploy
+          if [ -n "${B_SSH_KEY_B64:-}" ]; then
+            printf '%s' "$B_SSH_KEY_B64" | base64 -d > ~/.ssh/b_deploy
+          else
+            printf '%s\n' "$B_SSH_KEY" | tr -d '\r' > ~/.ssh/b_deploy
+          fi
           chmod 600 ~/.ssh/b_deploy
+          echo "key fingerprint: $(ssh-keygen -lf ~/.ssh/b_deploy)"
+
+      - name: Trigger remote deploy over SSH
+        env:
+          B_HOST: ${{ secrets.B_HOST }}
+          B_USER: ${{ secrets.B_USER }}
+        run: |
+          set -euo pipefail
           ssh -i ~/.ssh/b_deploy -o IdentitiesOnly=yes -o BatchMode=yes \
               -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
               "$B_USER@$B_HOST" "deploy ${{ github.ref_name }}"

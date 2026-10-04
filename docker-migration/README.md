@@ -41,7 +41,8 @@ docker push ───────────────▶  私有仓库（ACR
 │   ├── 02-containerize.md     # 容器化：多阶段 Dockerfile + compose 本地编排
 │   ├── 03-build-and-push.md   # 交付：构建 → tag → push 私有镜像仓库
 │   ├── 04-deploy.md           # 上线：服务器部署脚本、验收、回滚
-│   └── 05-pitfalls.md         # 踩坑清单（16 条，含根因与修复）
+│   ├── 05-pitfalls.md         # 踩坑清单（16 条，含根因与修复）
+│   └── 06-ci-cd.md            # CI/CD：GitHub Actions 自动化、受限 deploy key、发布回滚
 └── examples/                  # 可直接套用的模板（已通用化）
     ├── backend-Dockerfile
     ├── frontend-Dockerfile
@@ -49,7 +50,10 @@ docker push ───────────────▶  私有仓库（ACR
     ├── .env.example
     ├── nginx-default.conf
     ├── build-push.sh          # 本地一键构建推送
-    └── deploy-server.sh       # 服务器一键部署
+    ├── deploy-server.sh       # 服务器一键部署
+    ├── ci.yml                 # GitHub Actions · 质量门禁
+    ├── cd.yml                 # GitHub Actions · 发布 + 一键回滚
+    └── remote-deploy.sh       # 服务器受限部署入口（forced command 的目标脚本）
 ```
 
 ## 快速开始
@@ -65,6 +69,25 @@ bash examples/build-push.sh
 # 3. 服务器上部署（先跑 docs/01 的只读检查确认就绪）
 bash deploy-server.sh
 ```
+
+## CI/CD（可选增强）
+
+上面三步是**手动**链路。交给 GitHub Actions 之后：
+
+| 触发 | 动作 | 凭据 |
+|---|---|---|
+| `push` / `PR` → main | **CI**：后端 `mvn verify` + 前端 typecheck & build（质量门禁） | 无 |
+| `push` tag `v*` | **CD**：构建 → 推镜像（`:svc` 与不可变 `:svc-<tag>`）→ 部署 → 冒烟 | 仓库 + 部署 SSH |
+| 手动 *Run workflow* + `version` | **CD**：把 `:svc-<ver>` 提升为 `:svc` → 部署 → 冒烟（**一键回滚 / 定点发布**） | 同上 |
+
+两个设计要点（详见 [`docs/06-ci-cd.md`](docs/06-ci-cd.md)）：
+
+- **受限 deploy key**：CI 私钥只存 Secret（base64）；服务器 `authorized_keys` 用 `command=` + `restrict` 锁死，
+  只允许执行一个部署脚本；`sudoers` 只放两条**参数逐字一致**的 NOPASSWD 命令。
+- **回滚放 CI 侧**：由 CI 把旧版本镜像重新提升为「当前」tag。
+  若改成让服务器自己改 `.env` 选镜像，等于给运维账号「指定任意镜像」的能力 → 配合 NOPASSWD 就是**免密提权**。
+
+模板：`examples/ci.yml`、`examples/cd.yml`、`examples/remote-deploy.sh`。
 
 ## 迁移节奏（建议）
 
@@ -85,6 +108,8 @@ bash deploy-server.sh
 - [ ] 定时备份在新容器环境下正常生成
 - [ ] OOM 策略生效：`ExitOnOutOfMemoryError` 后 compose 自动拉起
 - [ ] 监控 / 探活（如跨机 WireGuard）在容器网络模式下可达
+- [ ] （可选）CI 在 push / PR 上跑通；打 tag 后 CD 自动发布并冒烟通过
+- [ ] （可选）手动 dispatch 指定旧版本 tag，可成功回滚且冒烟通过
 
 ## 环境约定
 

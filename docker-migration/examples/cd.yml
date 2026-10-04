@@ -1,0 +1,134 @@
+# ============================================================
+# CD · 打 tag 即发布 / 一键回滚
+#
+#   push tag v*                → build-push：构建 → 推镜像(:svc 与 :svc-<tag>) → 部署 → 冒烟
+#   手动 Run workflow + version → promote   ：把 :svc-<ver> 提升为 :svc     → 部署 → 冒烟（回滚/定点发布）
+#
+# 需要的 Secrets：REGISTRY / REGISTRY_USER / REGISTRY_PASSWORD
+#                 DEPLOY_HOST / DEPLOY_USER / DEPLOY_SSH_KEY_B64   ← 私钥用 base64，见 docs/06 §4
+# 服务器侧：authorized_keys 里该 key 带 command= + restrict，只跑 remote-deploy.sh（见 examples/remote-deploy.sh）
+# ============================================================
+name: CD
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "回滚/定点发布的版本 tag（例：v1.2.2）"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-push:
+    name: build & push images
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to registry
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ secrets.REGISTRY_PASSWORD }}" | \
+            docker login -u "${{ secrets.REGISTRY_USER }}" --password-stdin "${{ secrets.REGISTRY }}"
+
+      # 同时推「可变当前 tag」与「不可变版本 tag」；后者是回滚的凭据
+      # --provenance=false --sbom=false：否则私有仓库拒收 attestation（见 05 #1）
+      - name: Build & push backend
+        env:
+          IMG: ${{ secrets.REGISTRY }}/<ns>/myapp
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          docker build --provenance=false --sbom=false \
+            -t "$IMG:backend" -f backend/Dockerfile backend
+          docker tag "$IMG:backend" "$IMG:backend-$TAG"
+          docker push "$IMG:backend"
+          docker push "$IMG:backend-$TAG"
+
+      - name: Build & push frontend
+        env:
+          IMG: ${{ secrets.REGISTRY }}/<ns>/myapp
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          docker build --provenance=false --sbom=false \
+            -t "$IMG:frontend" -f frontend/Dockerfile frontend
+          docker tag "$IMG:frontend" "$IMG:frontend-$TAG"
+          docker push "$IMG:frontend"
+          docker push "$IMG:frontend-$TAG"
+
+  promote:
+    name: rollback · promote version to current
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to registry
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ secrets.REGISTRY_PASSWORD }}" | \
+            docker login -u "${{ secrets.REGISTRY_USER }}" --password-stdin "${{ secrets.REGISTRY }}"
+
+      # 版本选择放在 CI 侧（CI 有仓库凭据）→ 服务器无需任何写权限，不留提权面（见 docs/06 §6）
+      - name: Promote version tags to current
+        env:
+          IMG: ${{ secrets.REGISTRY }}/<ns>/myapp
+          VER: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          case "$VER" in v[0-9]*) : ;; *) echo "::error::版本需形如 v1.2.3：'$VER'"; exit 2 ;; esac
+          case "$VER" in *[!A-Za-z0-9._-]*) echo "::error::版本含非法字符：'$VER'"; exit 2 ;; esac
+          for svc in backend frontend; do
+            echo "==> promote $svc-$VER -> $svc"
+            docker pull "$IMG:$svc-$VER"
+            docker tag  "$IMG:$svc-$VER" "$IMG:$svc"
+            docker push "$IMG:$svc"
+          done
+          echo "### 回滚/定点发布：\`$VER\` 已提升为当前 tag" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: deploy (restricted key)
+    needs: [build-push, promote]
+    if: ${{ always() && (needs.build-push.result == 'success' || needs.promote.result == 'success') }}
+    runs-on: ubuntu-latest
+    environment: production            # 便于以后加「必须人工批准」
+    steps:
+      - name: Prepare SSH key
+        env:
+          DEPLOY_SSH_KEY_B64: ${{ secrets.DEPLOY_SSH_KEY_B64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s' "$DEPLOY_SSH_KEY_B64" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "key fingerprint: $(ssh-keygen -lf ~/.ssh/deploy_key)"   # 坏了一眼可见
+
+      # 用系统 ssh，不引第三方 action；传的命令会被服务器 forced command 忽略
+      - name: Trigger remote deploy over SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+              -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+              "$DEPLOY_USER@$DEPLOY_HOST" deploy
+
+      # 冒烟：重试业务接口，不要只看首页
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 6); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://example.com/api/health || true)
+            if [ "$code" = "200" ]; then echo "SMOKE_OK"; exit 0; fi
+            echo "attempt $i: got '$code', retry…"; sleep 5
+          done
+          echo "SMOKE_FAILED"; exit 1

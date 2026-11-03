@@ -1,8 +1,9 @@
 # Dual-servers-website-deployment
 
-基于单/双服务器的网站搭建。以 [we1l.site](we1l.site/)（Spring Boot 3 + Vue 3 ）为参照，沉淀**跨地域双机部署 + 容器化交付**的完整链路：架构设计、运维脚本、部署 SOP、CI/CD、以及可复用于其他项目的「传统部署 → Docker」迁移手册。
+基于单/双服务器的网站搭建。以 [we1l.site](we1l.site/)（Spring Boot 3 + Vue 3 ）为参照
+沉淀**跨地域双机部署 + 容器化交付**的完整链路：架构设计、运维脚本、部署 SOP、CI/CD、以及可复用于其他项目的「传统部署 → Docker」迁移手册。
 
-> 本仓库内所有部署文档、脚本均为**公开脱敏**：公网 IP、域名、ACR 账号、SSH 账号、密钥文件等均已替换为占位符或外部读取（`$(cat /opt/...)`）。
+> 本仓库内所有部署文档、脚本均已**公开脱敏**：公网 IP、域名、ACR 账号、SSH 账号、密钥文件等均已替换为占位符或外部读取（`$(cat /opt/...)`）。
 
 ## 架构概览
 
@@ -37,11 +38,11 @@ Dual-servers-website-deployment/
 │   ├── docker-compose.prod.yml    # 生产编排（Nginx + 后端 + 前端，含 .env 注入）
 │   ├── nginx-default.conf         # 反代 / 静态 / SSL 配置模板
 │   ├── Dockerfile (we1l-backend / we1l-frontend)  # 多阶段构建
-│   ├── docs/部署操作文档.md         # 双机部署 SOP（572 行，脱敏版）
+│   ├── docs/部署操作文档.md        # 双机部署 SOP（572 行，脱敏版）
 │   ├── scripts/                   # 部署 / 回滚 / 监控 agent 安装等运维脚本
 │   ├── we1l-backend/              # Spring Boot 3（JDK 21，WAR）
 │   └── we1l-frontend/             # Vue 3 + Vite
-└── docker-migration/             # 通用「传统 → Docker」迁移手册（可复用于任意项目）
+└── docker-migration/              # 通用「传统 → Docker」迁移手册（可复用于任意项目）
     ├── README.md                  # 交付链路总览 + 快速开始 + 验收清单
     ├── docs/01~05                 # 体检 / 容器化 / 构建推送 / 部署 / 踩坑集
     └── examples/                  # 7 个可套用模板（Dockerfile×2 / compose / .env / nginx / 脚本×2）
